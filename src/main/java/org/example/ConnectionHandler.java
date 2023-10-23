@@ -2,12 +2,17 @@ package org.example;
 import java.io.*;
 import java.net.Socket;
 import java.nio.charset.StandardCharsets;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 public class ConnectionHandler {
-    private static String HTTP_HEADERS_TYPE = "";
+    private static String HTTP_HEADERS_TYPE;
 
-    private static String HTTP_BODY = "";
-    private static final String HTTP_HEADERS = "HTTP/1.1 200OK\n" +
+    private static String HTTP_BODY;
+
+    static class JsonMessage{
+        public String message;
+    }
+    private static final String HTTP_HEADERS = "HTTP/1.1 200 OK\n" +
             "Date: Mon, 18 Sep 2023 14:08:55 +0200\n" +
             "HttpServer: Simple Webserver\n" +
             "Content-Length: 180\n";
@@ -38,25 +43,30 @@ public class ConnectionHandler {
                     new InputStreamReader(socket.getInputStream(),StandardCharsets.US_ASCII));
             var outputStreamWriter = new BufferedWriter(
                     new OutputStreamWriter(socket.getOutputStream(), StandardCharsets.US_ASCII));
-            switch (parseRequest(inputStreamReader)) {
-                case "application/json": {
-                    HTTP_HEADERS_TYPE.equals("Content-Type: application/json\n");
-                    HTTP_BODY = HTTP_BODY_TEXT;
-                    writeResponse(outputStreamWriter);
-                } break;
-                case "text/plain": {
-                    HTTP_HEADERS_TYPE.equals("Content-Type: text/plain\n" +
-                            "Content-Disposition: attachment; filename=File.txt\n");
-                    HTTP_BODY = HTTP_BODY_TEXT;
-                    writeResponse(outputStreamWriter);
-                } break;
-                default: {
-                    HTTP_HEADERS_TYPE.equals("Content-Type: text/html\n");
-                    HTTP_BODY = HTTP_BODY_HTML;
-                    writeResponse(outputStreamWriter);
-                } break;
+            if (parseRequest(inputStreamReader).equals("application/json")) {
+                ObjectMapper mapper = new ObjectMapper();
+                JsonMessage jsonMessage = new JsonMessage();
+                jsonMessage.message = HTTP_BODY_TEXT;
+                HTTP_HEADERS_TYPE = ("Content-Type: application/json\n");
+                HTTP_BODY = mapper.writeValueAsString(jsonMessage);
+                System.out.println(HTTP_HEADERS+HTTP_HEADERS_TYPE+HTTP_BODY);
+                writeResponse(outputStreamWriter);
             }
-        } catch (IOException e) {
+            else if (parseRequest(inputStreamReader).equals("text/html")){
+                HTTP_HEADERS_TYPE = ("Content-Type: text/html\n");
+                HTTP_BODY = HTTP_BODY_HTML;
+                System.out.println(HTTP_HEADERS+HTTP_HEADERS_TYPE+HTTP_BODY);
+                writeResponse(outputStreamWriter);
+            }
+            else {
+                HTTP_HEADERS_TYPE = ("Content-Type: text/plain\n" +
+                        "Content-Disposition: attachment; filename=File.txt\n");
+                HTTP_BODY = HTTP_BODY_TEXT;
+                System.out.println(HTTP_HEADERS+HTTP_HEADERS_TYPE+HTTP_BODY);
+                writeResponse(outputStreamWriter);
+            }
+        }
+         catch (IOException e) {
             throw new RuntimeException(e);
         }
     }
@@ -64,6 +74,7 @@ public class ConnectionHandler {
         String str = "";
         var request = inputStreamReader.readLine();
         while (request != null && !request.isEmpty()) {
+            str = request.substring(7).trim();
             System.out.println(request);
             request = inputStreamReader.readLine();
         }

@@ -43,7 +43,7 @@ public class ConnectionHandler {
                     new InputStreamReader(socket.getInputStream(),StandardCharsets.US_ASCII));
             var outputStreamWriter = new BufferedWriter(
                     new OutputStreamWriter(socket.getOutputStream(), StandardCharsets.US_ASCII));
-            if (parseRequest(inputStreamReader).equals("application/json")) {
+            if (parseRequest(inputStreamReader).contains("application/json")) {
                 ObjectMapper mapper = new ObjectMapper();
                 JsonMessage jsonMessage = new JsonMessage();
                 jsonMessage.message = HTTP_BODY_TEXT;
@@ -52,16 +52,16 @@ public class ConnectionHandler {
                 System.out.println(HTTP_HEADERS+HTTP_HEADERS_TYPE+HTTP_BODY);
                 writeResponse(outputStreamWriter);
             }
-            else if (parseRequest(inputStreamReader).equals("text/html")){
+            else if (parseRequest(inputStreamReader).contains("text/plain" +
+                    "Content-Disposition: attachment; filename=File.txt\n")){
                 HTTP_HEADERS_TYPE = ("Content-Type: text/html\n");
-                HTTP_BODY = HTTP_BODY_HTML;
+                HTTP_BODY = HTTP_BODY_TEXT;
                 System.out.println(HTTP_HEADERS+HTTP_HEADERS_TYPE+HTTP_BODY);
                 writeResponse(outputStreamWriter);
             }
             else {
-                HTTP_HEADERS_TYPE = ("Content-Type: text/plain\n" +
-                        "Content-Disposition: attachment; filename=File.txt\n");
-                HTTP_BODY = HTTP_BODY_TEXT;
+                HTTP_HEADERS_TYPE = ("Content-Type: text/html\n");
+                HTTP_BODY = HTTP_BODY_HTML;
                 System.out.println(HTTP_HEADERS+HTTP_HEADERS_TYPE+HTTP_BODY);
                 writeResponse(outputStreamWriter);
             }
@@ -74,7 +74,6 @@ public class ConnectionHandler {
         String str = "";
         var request = inputStreamReader.readLine();
         while (request != null && !request.isEmpty()) {
-            str = request.substring(7).trim();
             System.out.println(request);
             request = inputStreamReader.readLine();
         }

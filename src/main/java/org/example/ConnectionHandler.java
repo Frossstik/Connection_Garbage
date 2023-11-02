@@ -1,4 +1,5 @@
 package org.example;
+
 import java.io.*;
 import java.net.Socket;
 import java.nio.charset.StandardCharsets;
@@ -39,29 +40,24 @@ public class ConnectionHandler {
             var outputStreamWriter = new BufferedWriter(new OutputStreamWriter(socket.getOutputStream(),
                     StandardCharsets.UTF_8));
             switch (parseRequest(inputStreamReader)) {
-                case "application/json": {
+                case "application/json" -> {
                     HTTP_HEADERS_TYPE = "Content-Length: 12\n" +
                             "Content-Type: application/json\n";
                     HTTP_BODY = HTTP_BODY_JSON;
-                    writeResponse(outputStreamWriter);
                 }
-                break;
-                case "text/html": {
+                case "text/html" -> {
                     HTTP_HEADERS_TYPE = "Content-Length: 180\n" +
                             "Content-Type: text/html\n";
                     HTTP_BODY = HTTP_BODY_HTML;
-                    writeResponse(outputStreamWriter);
                 }
-                break;
-                default: {
+                default -> {
                     HTTP_HEADERS_TYPE = "Content-Length: 4\n" +
                             "Content-Type: text/plain\n" +
                             "Content-Disposition: attachment; filename=file.txt\n";
                     HTTP_BODY = HTTP_BODY_TEXT;
-                    writeResponse(outputStreamWriter);
                 }
-                break;
             }
+            writeResponse(outputStreamWriter);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
@@ -71,9 +67,15 @@ public class ConnectionHandler {
         String str = "";
         var request = inputStreamReader.readLine();
         while (request != null && !request.isEmpty()) {
-            if (request.contains("Accept:"))
-                str = request.substring(7).trim();
             request = inputStreamReader.readLine();
+            System.out.println(request);
+            if (request.contains("Accept:")) {
+                str = request.substring(7).trim();
+                if (str.contains(",")) {
+                    str = str.split("\\,", 2)[0];
+                }
+                break;
+            }
         }
         return str;
     }
